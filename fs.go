@@ -194,7 +194,7 @@ func NewPathPrefixStripper(prefixSize int) PathRewriteFunc {
 //
 // It is prohibited copying FS values. Create new values instead.
 type FS struct {
-	noCopy noCopy
+	noCopy noCopy //nolint:unused,structcheck
 
 	// Path to the root directory to serve files from.
 	Root string
@@ -943,7 +943,7 @@ func (h *fsHandler) createDirIndex(base *URI, dirPath string, mustCompress bool)
 	}
 
 	fm := make(map[string]os.FileInfo, len(fileinfos))
-	var filenames []string
+	filenames := make([]string, 0, len(fileinfos))
 	for _, fi := range fileinfos {
 		name := fi.Name()
 		if strings.HasSuffix(name, h.compressedFileSuffix) {
@@ -958,7 +958,7 @@ func (h *fsHandler) createDirIndex(base *URI, dirPath string, mustCompress bool)
 	base.CopyTo(&u)
 	u.Update(string(u.Path()) + "/")
 
-	sort.Sort(sort.StringSlice(filenames))
+	sort.Strings(filenames)
 	for _, name := range filenames {
 		u.Update(name)
 		pathEscaped := html.EscapeString(string(u.Path()))
@@ -1193,7 +1193,9 @@ func readFileHeader(f *os.File, compressed bool) ([]byte, error) {
 		N: 512,
 	}
 	data, err := ioutil.ReadAll(lr)
-	f.Seek(0, 0)
+	if _, err := f.Seek(0, 0); err != nil {
+		return nil, err
+	}
 
 	if zr != nil {
 		releaseGzipReader(zr)
